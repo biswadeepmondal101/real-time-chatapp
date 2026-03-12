@@ -4,7 +4,7 @@ import ChatHeader from "./ChatHeader";
 import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
-import { formatMessageTime } from "../utils/formatMessageTime";
+import { formatMessageTime } from "../utils/FormatMessageTime.js";
 
 export const ChatContainer = () => {
   const {
@@ -15,20 +15,15 @@ export const ChatContainer = () => {
     subscribeToMessages,
     unsubscribeToMessages,
   } = useChatStore();
-  const { authUser } = useAuthStore();
+  const { authUser, socket } = useAuthStore();
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    getMessages(selectedUser._id);
     subscribeToMessages();
-
+    getMessages(selectedUser._id);
+    socket.emit("messageSeen", selectedUser._id, authUser._id);
     return () => unsubscribeToMessages();
-  }, [
-    selectedUser._id,
-    getMessages,
-    subscribeToMessages,
-    unsubscribeToMessages,
-  ]);
+  }, [selectedUser._id, getMessages]);
 
   useEffect(() => {
     if (messagesEndRef && messages) {
@@ -58,6 +53,9 @@ export const ChatContainer = () => {
               <time className="text-xs opacity-50">
                 {formatMessageTime(message.createdAt)}
               </time>
+              {message.senderId === authUser._id && (
+                <div>{message.seen ? "seen" : "delivered"}</div>
+              )}
             </div>
             <div className="chat-bubble flex flex-col">
               {message.image && (

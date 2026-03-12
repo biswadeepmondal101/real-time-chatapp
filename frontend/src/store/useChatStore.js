@@ -36,33 +36,88 @@ export const useChatStore = create((set, get) => ({
   },
 
   sendMessages: async (messageData) => {
-    const { selectedUser, messages } = get();
+    const { selectedUser, messages, users } = get();
     try {
       const res = await axiosInstance.post(
         `messages/send/${selectedUser._id}`,
         messageData,
       );
       set({ messages: [...messages, res.data] });
+
+      const updatedUsers = users.map((user) => {
+        if (user._id === selectedUser._id) {
+          return {
+            ...user,
+            lastMessage:
+              messageData.text || (messageData.image ? "📷 Image" : ""),
+            lastMessageTime: res.data.createdAt,
+          };
+        }
+        return user;
+      });
+
+      set({ users: updatedUsers });
     } catch (error) {
       toast.error(error.response.data.message);
     }
   },
 
   subscribeToMessages: () => {
-    const { selectedUser } = get();
     const socket = useAuthStore.getState().socket;
-    if (!selectedUser || !socket) return;
+    if (!socket) return;
+    console.log("Subscribed to messages");
     socket.on("newMessage", (newMessage) => {
+      const authUser = useAuthStore.getState().authUser;
+      const { messages, users, selectedUser } = get();
+
+      const otherUserId =
+        newMessage.senderId === authUser._id
+          ? newMessage.receiverId
+          : newMessage.senderId;
+
+      const updatedUsers = users.map((user) => {
+        if (user._id === otherUserId) {
+          return {
+            ...user,
+            lastMessage:
+              newMessage.text || (newMessage.image ? "📷 Image" : ""),
+            lastMessageTime: newMessage.createdAt,
+          };
+        }
+        return user;
+      });
+      console.log(updatedUsers.lastMessage);
+
+      set({ users: updatedUsers });
+
+      if (!selectedUser) return;
+
       const isNewMessageFromSelectedUser =
         newMessage.senderId === selectedUser._id;
       if (!isNewMessageFromSelectedUser) return;
-      set({ messages: [...get().messages, newMessage] });
+
+      set({ messages: [...messages, newMessage] });
+
+      if (!newMessage.seen) {
+        socket.emit("messageSeen", selectedUser._id, newMessage.receiverId);
+      }
+    });
+
+    socket.on("messageSeenUpdate", (receiverId) => {
+      const newMessages = get().messages.map((message) => {
+        if (message.receiverId === receiverId) {
+          return { ...message, seen: true };
+        }
+        return message;
+      });
+      set({ messages: newMessages });
     });
   },
 
   unsubscribeToMessages: async () => {
     const socket = useAuthStore.getState().socket;
     socket.off("newMessage");
+    socket.off("messageSeenUpdate");
   },
 
   setSelectedUser: (selectedUser) => set({ selectedUser }),

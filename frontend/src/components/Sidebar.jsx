@@ -1,18 +1,36 @@
 import React, { useEffect, useState } from "react";
-import { Users } from "lucide-react";
+import { PlusCircle, Users } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton.jsx";
 import { useAuthStore } from "../store/useAuthStore.js";
+import { formatMessageTime } from "../utils/FormatMessageTime.js";
 
 export const Sidebar = () => {
-  const { getUsers, users, selectedUser, setSelectedUser, isUserLoading } =
-    useChatStore();
+  const {
+    getUsers,
+    users,
+    selectedUser,
+    setSelectedUser,
+    isUserLoading,
+    subscribeToMessages,
+    unsubscribeToMessages,
+  } = useChatStore();
 
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers, addContact } = useAuthStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [input, setInput] = useState("");
+
+  const handleAddcontact = async () => {
+    if (!input.trim()) return;
+    await addContact({ email: input });
+    getUsers();
+  };
 
   useEffect(() => {
     getUsers();
+    subscribeToMessages();
+    return () => unsubscribeToMessages();
   }, [getUsers]);
 
   const filteredUsers = showOnlineOnly
@@ -24,9 +42,47 @@ export const Sidebar = () => {
   return (
     <aside className="h-full w-20 lg:w-72 border-r border-base-300 flex flex-col transition-all duration-200">
       <div className="border-b border-base-300 w-full p-5">
-        <div className="flex items-center gap-2">
-          <Users className="size-6" />
-          <span className="font-medium hidden lg:block">Contacts</span>
+        <div className="flex items-center gap-2 space-x-30 overflow-auto">
+          <div className="flex items-center gap-2">
+            <Users className="size-6" />
+            <span className="font-medium hidden lg:block">Contacts</span>
+          </div>
+          <div>
+            <button onClick={() => setOpen(true)}>
+              <PlusCircle className="size-6" />
+            </button>
+            {open && (
+              <div className="modal modal-open">
+                <div className="modal-box">
+                  <h3 className="font-bold text-lg">Enter Email ID to Add</h3>
+
+                  <input
+                    type="text"
+                    placeholder="Email"
+                    className="input input-bordered w-full mt-4"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                  />
+
+                  <div className="modal-action">
+                    <button className="btn" onClick={() => setOpen(false)}>
+                      Cancel
+                    </button>
+
+                    <button
+                      className="btn btn-primary"
+                      onClick={() => {
+                        handleAddcontact();
+                        setOpen(false);
+                      }}
+                    >
+                      Add
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
         <div className="mt-3 hidden lg:flex items-center gap-2">
           <label className="cursor-pointer flex items-center gap-2">
@@ -65,17 +121,27 @@ export const Sidebar = () => {
               )}
             </div>
 
-            {/* User info - only visible on larger screens */}
-            <div className="hidden lg:block text-left min-w-0">
-              <div className="font-medium truncate">{user.fullName}</div>
+            <div className="hidden lg:block text-left min-w-0 w-full">
+              {" "}
+              <div className="flex items-center justify-between">
+                {" "}
+                <div className="font-medium truncate pr-2">{user.fullName}</div>
+                <span className="text-sm text-zinc-400 shrink-0 ml-auto">
+                  {" "}
+                  {/* Added ml-auto */}
+                  {formatMessageTime(user.lastMessageTime)}
+                </span>
+              </div>
               <div className="text-sm text-zinc-400">
-                {onlineUsers.includes(user._id) ? "Online" : "Offline"}
+                <p className="truncate block"> {user.lastMessage}</p>
               </div>
             </div>
           </button>
         ))}
         {filteredUsers.length === 0 && (
-          <div className="text-center text-zinc-500 py-4">No one online</div>
+          <div className="text-center text-zinc-500 py-4">
+            No contacts online
+          </div>
         )}
       </div>
     </aside>

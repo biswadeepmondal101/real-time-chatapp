@@ -2,6 +2,7 @@ import { generateToken } from "../lib/utils.js";
 import User from "../models/user.model.js";
 import bcrypt from "bcryptjs";
 import cloudinary from "../lib/cloudinary.js";
+import Conversation from "../models/conversation.model.js";
 
 export const signup = async (req, res) => {
   const { fullName, email, password } = req.body;
@@ -89,23 +90,31 @@ export const logout = (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic } = req.body;
+    const { profilePic, bio, fullName } = req.body;
     const userId = req.user._id;
 
-    if (!profilePic) {
-      return res
-        .status(400)
-        .json({ message: "Please upload a profile picture!!" });
+    const updateData = {};
+
+    if (bio) {
+      updateData.bio = bio;
     }
-    const uploadResponce = await cloudinary.uploader.upload(profilePic);
-    const updateUser = await User.findByIdAndUpdate(
-      userId,
-      { profilePic: uploadResponce.secure_url },
-      { new: true },
-    );
+
+    if (fullName) {
+      updateData.fullName = fullName;
+    }
+
+    if (profilePic) {
+      const uploadResponse = await cloudinary.uploader.upload(profilePic);
+      updateData.profilePic = uploadResponse.secure_url;
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(userId, updateData, {
+      new: true,
+    });
+
     return res.status(200).json({
-      updateUser,
-      message: "Profile picture updated successfully",
+      updatedUser,
+      message: "Profile updated successfully",
     });
   } catch (error) {
     console.log("Error in updateProfile", error);
@@ -119,6 +128,58 @@ export const getUser = async (req, res) => {
     return res.status(200).json(user);
   } catch (error) {
     console.log("Error in getUser", error);
+    return res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const addContact = async (req, res) => {
+  const { email } = req.body;
+  const userId = req.user._id;
+  try {
+    if (!email) {
+      return res.status(400).json({ message: "Please provided an email" });
+    }
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res
+        .status(400)
+        .json({ message: "User not exits with this email" });
+    }
+
+    if (user._id.toString() === userId.toString()) {
+      return res.status(400).json({ message: "You cannot add yourself" });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { $addToSet: { contact: user._id } },
+      { new: true },
+    );
+
+    await User.findByIdAndUpdate(
+      user._id,
+      { $addToSet: { contact: userId } },
+      { new: true },
+    );
+
+    const existingConversation = await Conversation.findOne({
+      participants: { $all: [userId, user._id] },
+    });
+
+    if (!existingConversation) {
+      const newConversation = new Conversation({
+        participants: [userId, user._id],
+      });
+
+      await newConversation.save();
+    }
+    return res.status(200).json({
+      updatedUser,
+      message: "New contact added!!!",
+    });
+  } catch (error) {
+    console.log("Error in addcontact", error);
     return res.status(500).json({ message: "Internal server error" });
   }
 };

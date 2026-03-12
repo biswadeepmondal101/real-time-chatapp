@@ -107,4 +107,15 @@ export const useAuthStore = create((set, get) => ({
     const { socket } = get();
     if (socket?.connected) socket.disconnect();
   },
+
+  addContact: async (data) => {
+    try {
+      const res = await axiosInstance.post("/auth/add-contact", data);
+      set({ authUser: res.data });
+      toast.success("New Contact Added");
+    } catch (error) {
+      toast.error(error.response.data.message);
+      console.log("Error in Add Contact", error);
+    }
+  },
 }));
