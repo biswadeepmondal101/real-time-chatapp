@@ -5,6 +5,8 @@ import MessageInput from "./MessageInput";
 import MessageSkeleton from "./skeletons/MessageSkeleton";
 import { useAuthStore } from "../store/useAuthStore";
 import { formatMessageTime } from "../utils/FormatMessageTime.js";
+import { Download } from "lucide-react";
+import toast from "react-hot-toast";
 
 export const ChatContainer = () => {
   const {
@@ -25,11 +27,47 @@ export const ChatContainer = () => {
     return () => unsubscribeToMessages();
   }, [selectedUser._id, getMessages]);
 
+  const prevMessagesLength = useRef(0);
+  const isInitialLoad = useRef(true);
+
   useEffect(() => {
-    if (messagesEndRef && messages) {
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (!messagesEndRef.current) return;
+
+    if (isInitialLoad.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+      isInitialLoad.current = false;
+    } else if (messages.length > prevMessagesLength.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
     }
+
+    prevMessagesLength.current = messages.length;
   }, [messages]);
+
+  useEffect(() => {
+    isInitialLoad.current = true;
+    prevMessagesLength.current = 0;
+  }, [selectedUser]);
+
+  const downloadImage = async (url) => {
+    try {
+      const res = await fetch(url);
+      const blob = await res.blob();
+
+      const blobUrl = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = blobUrl;
+      link.download = "image.jpg";
+
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (error) {
+      console.error("Download failed", error);
+    }
+  };
 
   if (isMessagesLoading)
     return (
@@ -46,7 +84,7 @@ export const ChatContainer = () => {
         {messages.map((message) => (
           <div
             key={message._id}
-            className={`chat ${message.senderId === authUser._id ? "chat-end" : "chat-start"}`}
+            className={`chat ${message.senderId === authUser._id ? "chat-end " : "chat-start"}`}
             ref={messagesEndRef}
           >
             <div className="chat-header mb-1">
@@ -57,15 +95,30 @@ export const ChatContainer = () => {
                 <div>{message.seen ? "seen" : "delivered"}</div>
               )}
             </div>
-            <div className="chat-bubble flex flex-col">
+
+            <div
+              className={`chat-bubble flex flex-col ${
+                message.senderId === authUser._id && "chat-bubble-primary"
+              }`}
+            >
               {message.image && (
-                <img
-                  src={message.image}
-                  alt="Sent message"
-                  className="sm:max-w[200px] rounded-md mb-2"
-                />
+                <div className="relative group w-fit">
+                  <img
+                    src={message.image}
+                    alt="Sent message"
+                    className="sm:max-w[200px] rounded-md mb-2"
+                  />
+                  <button
+                    onClick={() => downloadImage(message.image)}
+                    className="absolute top-0 right-0 hidden group-hover:block text-xs bg-zinc-700 px-2 py-1 rounded"
+                  >
+                    <Download className="w-4 h-4" />
+                  </button>
+                </div>
               )}
-              {message.text && <p>{message.text}</p>}
+              <div className="relative group w-fit">
+                <p>{message.text}</p>
+              </div>
             </div>
           </div>
         ))}

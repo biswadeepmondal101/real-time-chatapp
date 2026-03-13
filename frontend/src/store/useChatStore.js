@@ -25,9 +25,21 @@ export const useChatStore = create((set, get) => ({
 
   getMessages: async (userId) => {
     set({ isMessagesLoading: true });
+    const { selectedUser, users } = get();
     try {
       const res = await axiosInstance.get(`/messages/${userId}`);
       set({ messages: res.data });
+      const updatedUsers = users.map((user) => {
+        if (user._id === selectedUser._id) {
+          return {
+            ...user,
+            unreadCount: 0,
+          };
+        }
+        return user;
+      });
+
+      set({ users: updatedUsers });
     } catch (error) {
       toast.error(error.response.data.message);
     } finally {
@@ -56,7 +68,11 @@ export const useChatStore = create((set, get) => ({
         return user;
       });
 
-      set({ users: updatedUsers });
+      set({
+        users: updatedUsers.sort(
+          (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime),
+        ),
+      });
     } catch (error) {
       toast.error(error.response.data.message);
     }
@@ -65,7 +81,6 @@ export const useChatStore = create((set, get) => ({
   subscribeToMessages: () => {
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
-    console.log("Subscribed to messages");
     socket.on("newMessage", (newMessage) => {
       const authUser = useAuthStore.getState().authUser;
       const { messages, users, selectedUser } = get();
@@ -76,19 +91,23 @@ export const useChatStore = create((set, get) => ({
           : newMessage.senderId;
 
       const updatedUsers = users.map((user) => {
-        if (user._id === otherUserId) {
-          return {
-            ...user,
-            lastMessage:
-              newMessage.text || (newMessage.image ? "📷 Image" : ""),
-            lastMessageTime: newMessage.createdAt,
-          };
-        }
-        return user;
-      });
-      console.log(updatedUsers.lastMessage);
+        if (user._id !== otherUserId) return user;
 
-      set({ users: updatedUsers });
+        const isChatOpen = selectedUser?._id === otherUserId;
+
+        return {
+          ...user,
+          lastMessage: newMessage.text || (newMessage.image ? "📷 Image" : ""),
+          lastMessageTime: newMessage.createdAt,
+          unreadCount: isChatOpen ? 0 : user.unreadCount + 1,
+        };
+      });
+
+      set({
+        users: updatedUsers.sort(
+          (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime),
+        ),
+      });
 
       if (!selectedUser) return;
 

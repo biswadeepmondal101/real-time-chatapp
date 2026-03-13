@@ -3,7 +3,6 @@ import Message from "../models/message.model.js";
 import Conversation from "../models/conversation.model.js";
 import cloudinary from "../lib/cloudinary.js";
 import { getReceiverSocketId, io } from "../lib/socket.js";
-import { get } from "http";
 
 export const getAllUsers = async (req, res) => {
   try {
@@ -25,8 +24,12 @@ export const getAllUsers = async (req, res) => {
         ...user._doc,
         lastMessage: conversation?.lastMessage?.text || "",
         lastMessageTime: conversation?.lastMessage?.createdAt,
+        unreadCount: conversation?.unreadCount?.get(myId.toString()) || 0,
       };
     });
+    sidebarUsers.sort(
+      (a, b) => new Date(b.lastMessageTime) - new Date(a.lastMessageTime),
+    );
     return res.status(200).json(sidebarUsers);
   } catch (error) {
     console.log("Error in getAllUsers", error);
@@ -45,6 +48,17 @@ export const getMessages = async (req, res) => {
         { senderId: userId, receiverId: myId },
       ],
     });
+
+    await Conversation.findOneAndUpdate(
+      {
+        participants: { $all: [myId, userId] },
+      },
+      {
+        $set: {
+          [`unreadCount.${myId}`]: 0,
+        },
+      },
+    );
 
     return res.status(200).json(messages);
   } catch (error) {
@@ -87,6 +101,9 @@ export const sendMessage = async (req, res) => {
           "lastMessage.senderId": senderId,
           "lastMessage.createdAt": new Date(),
         },
+        $inc: {
+          [`unreadCount.${receiverId}`]: 1,
+        },
       },
       {
         new: true,
@@ -117,5 +134,15 @@ io.on("connection", (socket) => {
     if (senderSocketId) {
       io.to(senderSocketId).emit("messageSeenUpdate", receiverId);
     }
+    await Conversation.findOneAndUpdate(
+      {
+        participants: { $all: [senderId, receiverId] },
+      },
+      {
+        $inc: {
+          [`unreadCount.${receiverId}`]: 0,
+        },
+      },
+    );
   });
 });
