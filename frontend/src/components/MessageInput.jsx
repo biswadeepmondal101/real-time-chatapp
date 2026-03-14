@@ -2,9 +2,11 @@ import React, { useRef } from "react";
 import { X, Send, Image } from "lucide-react";
 import { useChatStore } from "../store/useChatStore";
 import toast from "react-hot-toast";
-export const MessageInput = () => {
-  const { sendMessages } = useChatStore();
+import { useAuthStore } from "../store/useAuthStore";
 
+export const MessageInput = () => {
+  const { sendMessages, selectedUser } = useChatStore();
+  const { socket, authUser } = useAuthStore();
   const [text, setText] = React.useState("");
   const [imagePreview, setImagePreview] = React.useState(null);
   const fileInputRef = useRef(null);
@@ -44,6 +46,23 @@ export const MessageInput = () => {
       toast.error("Failed to send message:", error);
     }
   };
+
+  let typingTimeout;
+  const handelInputChange = (e) => {
+    setText(e.target.value);
+    socket.emit("typingStart", {
+      senderId: authUser._id,
+      receiverId: selectedUser._id,
+    });
+    clearTimeout(typingTimeout);
+    typingTimeout = setTimeout(() => {
+      socket.emit("typingEnd", {
+        senderId: authUser._id,
+        receiverId: selectedUser._id,
+      });
+    }, 2000);
+  };
+
   return (
     <div className="p-4 w-full">
       {imagePreview && (
@@ -73,7 +92,15 @@ export const MessageInput = () => {
             className="w-full input input-bordered rounded-lg input-sm sm:input-md"
             placeholder="Type a message..."
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              handelInputChange(e);
+            }}
+            onBlur={() =>
+              socket.emit("typingStop", {
+                senderId: authUser._id,
+                receiverId: selectedUser._id,
+              })
+            }
           />
           <input
             type="file"

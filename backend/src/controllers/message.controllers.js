@@ -139,10 +139,26 @@ io.on("connection", (socket) => {
         participants: { $all: [senderId, receiverId] },
       },
       {
-        $inc: {
+        $set: {
           [`unreadCount.${receiverId}`]: 0,
         },
       },
     );
+  });
+
+  socket.on("typingStart", ({ senderId, receiverId }) => {
+    const receiverSocketId = getReceiverSocketId(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("userTypingStart", { senderId });
+    }
+  });
+
+  socket.on("typingStop", ({ senderId, receiverId }) => {
+    const receiverSocketId = getReceiverSocketId(receiverId);
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("userTypingStop", { senderId });
+    }
   });
 });

@@ -1,4 +1,4 @@
-import { X } from "lucide-react";
+import React, { useEffect, useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import { useChatStore } from "../store/useChatStore";
 import { formatLastSeen } from "../utils/FormatMessageTime.js";
@@ -6,7 +6,27 @@ import { Link } from "react-router-dom";
 
 const ChatHeader = () => {
   const { selectedUser } = useChatStore();
-  const { onlineUsers } = useAuthStore();
+  const { onlineUsers, socket } = useAuthStore();
+
+  const [isTyping, setIsTyping] = useState(false);
+  useEffect(() => {
+    socket.on("userTypingStart", ({ senderId }) => {
+      if (senderId === selectedUser._id) {
+        setIsTyping(true);
+      }
+    });
+
+    socket.on("userTypingStop", ({ senderId }) => {
+      if (senderId === selectedUser._id) {
+        setIsTyping(false);
+      }
+    });
+
+    return () => {
+      socket.off("userTypingStart");
+      socket.off("userTypingStop");
+    };
+  }, [selectedUser._id]);
 
   return (
     <div className="p-2.5 border-b border-base-300">
@@ -30,9 +50,11 @@ const ChatHeader = () => {
             <div>
               <h3 className="font-medium">{selectedUser.fullName}</h3>
               <p className="text-sm text-base-content/70">
-                {onlineUsers.includes(selectedUser._id)
-                  ? "Online"
-                  : formatLastSeen(selectedUser.lastActive)}
+                {isTyping
+                  ? "Typing..."
+                  : onlineUsers.includes(selectedUser._id)
+                    ? "Online"
+                    : formatLastSeen(selectedUser.lastActive)}
               </p>
             </div>
           </div>
