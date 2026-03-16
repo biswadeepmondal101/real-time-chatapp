@@ -16,6 +16,7 @@ export const ChatContainer = () => {
     selectedUser,
     subscribeToMessages,
     unsubscribeToMessages,
+    users,
   } = useChatStore();
   const { authUser, socket } = useAuthStore();
   const messagesEndRef = useRef(null);
@@ -84,21 +85,26 @@ export const ChatContainer = () => {
         {messages.map((message) => (
           <div
             key={message._id}
-            className={`chat ${message.senderId === authUser._id ? "chat-end " : "chat-start"}`}
+            className={`chat ${message.senderId._id === authUser._id ? "chat-end " : "chat-start"}`}
             ref={messagesEndRef}
           >
             <div className="chat-header mb-1">
+              <div className="font-medium">
+                {message.senderId._id === authUser._id
+                  ? "You"
+                  : message.senderId.fullName}
+              </div>
               <time className="text-xs opacity-50">
                 {formatMessageTime(message.createdAt)}
               </time>
-              {message.senderId === authUser._id && (
+              {message.senderId._id === authUser._id && (
                 <div>{message.seen ? "seen" : "delivered"}</div>
               )}
             </div>
 
             <div
               className={`chat-bubble flex flex-col ${
-                message.senderId === authUser._id && "chat-bubble-primary"
+                message.senderId._id === authUser._id && "chat-bubble-primary"
               }`}
             >
               {message.image && (

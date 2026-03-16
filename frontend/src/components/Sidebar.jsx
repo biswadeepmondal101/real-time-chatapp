@@ -4,6 +4,7 @@ import { useChatStore } from "../store/useChatStore";
 import SidebarSkeleton from "./skeletons/SidebarSkeleton.jsx";
 import { useAuthStore } from "../store/useAuthStore.js";
 import { formatMessageTime } from "../utils/FormatMessageTime.js";
+import { useGroupStore } from "../store/useGroupStore.js";
 
 export const Sidebar = () => {
   const {
@@ -17,14 +18,27 @@ export const Sidebar = () => {
   } = useChatStore();
 
   const { onlineUsers, addContact } = useAuthStore();
+  const { createGroup } = useGroupStore();
   const [showOnlineOnly, setShowOnlineOnly] = useState(false);
+  const [plusopen, setPlusOpen] = useState(false);
   const [open, setOpen] = useState(false);
+  const [open2, setOpen2] = useState(false);
   const [input, setInput] = useState("");
+  const [input2, setInput2] = useState("");
 
   const handleAddcontact = async () => {
     if (!input.trim()) return;
     await addContact({ email: input });
+    setInput("");
     getUsers();
+  };
+
+  const handleCreateGroup = async () => {
+    if (!input.trim() || !input2.trim()) return;
+    await createGroup({ name: input, groupUser: [input2] });
+    await getUsers();
+    setInput("");
+    setInput2("");
   };
 
   useEffect(() => {
@@ -42,45 +56,89 @@ export const Sidebar = () => {
   return (
     <aside className="h-full w-50 lg:w-90 border-r border-base-300 flex flex-col transition-all duration-200">
       <div className="border-b border-base-300 w-full p-5">
-        <div className="flex items-center gap-2 space-x-30 overflow-auto justify-between">
+        <div className="flex items-center gap-2 space-x-30 overflow-visible justify-between">
           <div className="flex items-center gap-2">
             <Users className="size-6" />
             <span className="font-medium hidden lg:block">Contacts</span>
           </div>
 
-          <button
-            title="Add contact"
-            onClick={() => setOpen(true)}
-            className=" text-zinc-400 cursor-pointer hover:text-white transition-colors"
+          <div
+            className="relative"
+            onMouseEnter={() => setPlusOpen(true)}
+            onMouseLeave={() => setPlusOpen(false)}
           >
-            <PlusCircle className="size-6" />
-          </button>
+            <button
+              title="Add contact"
+              className="text-zinc-400 cursor-pointer hover:text-white transition-colors"
+            >
+              <PlusCircle className="size-6" />
+            </button>
+
+            {plusopen && (
+              <div className="absolute right-0 top-7 w-50 bg-base-100 border rounded-lg shadow-lg z-50">
+                <button
+                  onClick={() => setOpen(true)}
+                  className="block w-full text-left px-4 py-2 hover:bg-base-200"
+                >
+                  Add Contact
+                </button>
+
+                <button
+                  onClick={() => {
+                    setOpen(true);
+                    setOpen2(true);
+                  }}
+                  className="block w-full text-left px-4 py-2 hover:bg-base-200"
+                >
+                  Create Group
+                </button>
+              </div>
+            )}
+          </div>
           {open && (
             <div className="modal modal-open">
               <div className="modal-box">
-                <h3 className="font-bold text-lg">Enter Email ID to Add</h3>
+                <h3 className="font-bold text-lg">
+                  {open2 ? "Create Group" : "Enter Email ID to Add"}
+                </h3>
 
+                {open2 && (
+                  <input
+                    type="text"
+                    placeholder="Group Name"
+                    className="input input-bordered w-full mt-4"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                  />
+                )}
                 <input
                   type="text"
-                  placeholder="Email"
+                  placeholder={open2 ? "Member Email ID to Add" : "Email ID"}
                   className="input input-bordered w-full mt-4"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
+                  value={input2}
+                  onChange={(e) => setInput2(e.target.value)}
                 />
 
                 <div className="modal-action">
-                  <button className="btn" onClick={() => setOpen(false)}>
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      setOpen2(false);
+                      setOpen(false);
+                    }}
+                  >
                     Cancel
                   </button>
 
                   <button
                     className="btn btn-primary"
                     onClick={() => {
-                      handleAddcontact();
+                      open2 ? handleCreateGroup() : handleAddcontact();
                       setOpen(false);
+                      setOpen2(false);
                     }}
                   >
-                    Add
+                    {open2 ? "Create" : "Add"}
                   </button>
                 </div>
               </div>
@@ -106,7 +164,9 @@ export const Sidebar = () => {
         {filteredUsers.map((user) => (
           <button
             key={user._id}
-            onClick={() => setSelectedUser(user)}
+            onClick={() => {
+              setSelectedUser(user);
+            }}
             className={` w-full p-3 flex items-center gap-3 hover:bg-base-300 transition-colors
               ${user._id === selectedUser?._id ? "bg-base-300" : ""}`}
           >
@@ -128,7 +188,9 @@ export const Sidebar = () => {
               {" "}
               <div className="flex items-center justify-between">
                 {" "}
-                <div className="font-medium truncate pr-2">{user.fullName}</div>
+                <div className="font-medium truncate pr-2">
+                  {user.fullName || user.name}
+                </div>
                 <span className="text-sm text-zinc-400 shrink-0 ml-auto">
                   {" "}
                   {/* Added ml-auto */}

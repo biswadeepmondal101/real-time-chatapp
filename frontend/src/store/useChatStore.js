@@ -82,14 +82,13 @@ export const useChatStore = create((set, get) => ({
     const socket = useAuthStore.getState().socket;
     if (!socket) return;
     socket.on("newMessage", (newMessage) => {
-      const authUser = useAuthStore.getState().authUser;
       const { messages, users, selectedUser } = get();
 
-      const otherUserId =
-        newMessage.senderId === authUser._id
-          ? newMessage.receiverId
-          : newMessage.senderId;
+      const chat = users.find((u) => u._id === newMessage.receiverId);
 
+      const otherUserId = chat
+        ? newMessage.receiverId
+        : newMessage.senderId._id;
       const updatedUsers = users.map((user) => {
         if (user._id !== otherUserId) return user;
 
@@ -111,11 +110,14 @@ export const useChatStore = create((set, get) => ({
 
       if (!selectedUser) return;
 
-      const isNewMessageFromSelectedUser =
-        newMessage.senderId === selectedUser._id;
+      const isNewMessageFromSelectedUser = chat
+        ? newMessage.receiverId === selectedUser._id
+        : newMessage.senderId._id === selectedUser._id;
       if (!isNewMessageFromSelectedUser) return;
 
-      set({ messages: [...messages, newMessage] });
+      set((state) => ({
+        messages: [...state.messages, newMessage],
+      }));
 
       if (!newMessage.seen) {
         socket.emit("messageSeen", selectedUser._id, newMessage.receiverId);

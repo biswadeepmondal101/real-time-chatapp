@@ -8,6 +8,7 @@ import SignUpPage from "./pages/SignUpPage";
 import LoginPage from "./pages/LoginPage";
 import SettingsPage from "./pages/SettingsPage";
 import ProfilePage from "./pages/ProfilePage";
+import GroupInfoPage from "./pages/GroupInfoPage";
 import { useAuthStore } from "./store/useAuthStore";
 import { Toaster } from "react-hot-toast";
 import { useThemeStore } from "./store/useThemeStore";
@@ -56,6 +57,10 @@ const App = () => {
           <Route
             path="/profile"
             element={authUser ? <ProfilePage /> : <Navigate to="/login" />}
+          />
+          <Route
+            path="/groupinfo"
+            element={authUser ? <GroupInfoPage /> : <Navigate to="/login" />}
           />
         </Routes>
       </AnimatePresence>

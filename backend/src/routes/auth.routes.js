@@ -8,6 +8,7 @@ import {
   addContact,
 } from "../controllers/auth.controllers.js";
 import { protectRoute } from "../middleware/auth.middleware.js";
+import { get } from "mongoose";
 const router = express.Router();
 
 router.post("/signup", signup);

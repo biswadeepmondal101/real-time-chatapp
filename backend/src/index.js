@@ -10,6 +10,7 @@ dotenv.config();
 
 import authRoutes from "./routes/auth.routes.js";
 import messageRoutes from "./routes/message.routes.js";
+import groupRoutes from "./routes/group.routes.js";
 
 app.use(
   cors({
@@ -22,6 +23,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/group", groupRoutes);
 
 const port = process.env.PORT;
 const __dirname = path.resolve("../");
