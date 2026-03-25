@@ -1,12 +1,12 @@
 import { create } from "zustand";
 import { axiosInstance } from "../lib/axios";
 import toast from "react-hot-toast";
-import { useChatStore } from "./useChatStore";
 
 export const useGroupStore = create((set) => ({
   currentGroup: null,
   members: [],
   isGroupsLoading: false,
+  isGroupUpdating: false,
 
   getGroup: async (groupId) => {
     set({ isGroupsLoading: true });
@@ -47,6 +47,7 @@ export const useGroupStore = create((set) => ({
   },
 
   addMember: async (data) => {
+    set({ isGroupsLoading: true });
     const { groupId, ...restData } = data;
     try {
       const res = await axiosInstance.post(
@@ -57,10 +58,13 @@ export const useGroupStore = create((set) => ({
       return res.data;
     } catch (error) {
       toast.error(error.response.data.message);
+    } finally {
+      set({ isGroupsLoading: false });
     }
   },
 
   removeMember: async (data) => {
+    set({ isGroupsLoading: true });
     const { groupId, ...restData } = data;
     try {
       const res = await axiosInstance.post(
@@ -70,10 +74,13 @@ export const useGroupStore = create((set) => ({
       toast.success("Member removed successfully");
     } catch (error) {
       toast.error(error.response.data.message);
+    } finally {
+      set({ isGroupsLoading: false });
     }
   },
 
   updateGroup: async (data) => {
+    set({ isGroupUpdating: true });
     const { groupId, ...restData } = data;
     try {
       const res = await axiosInstance.post(
@@ -85,6 +92,8 @@ export const useGroupStore = create((set) => ({
       return res.data;
     } catch (error) {
       toast.error(error.response.data.message);
+    } finally {
+      set({ isGroupUpdating: false });
     }
   },
 }));

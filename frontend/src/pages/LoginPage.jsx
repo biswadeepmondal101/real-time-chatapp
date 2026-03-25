@@ -95,44 +95,59 @@ export const LoginPage = () => {
               </div>
             </div>
             <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Email */}
               <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Email</span>
-                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail className="size-5 text-base-content/40" />
+                    <Mail className="size-5 text-base-content/50" />
                   </div>
                   <input
                     type="email"
-                    className={`input input-bordered w-full pl-10`}
-                    placeholder="you@example.com"
+                    id="loginEmail"
+                    placeholder=" "
+                    className="peer input input-bordered w-full pl-10 pt-5 pb-2"
                     value={formData.email}
                     onChange={(e) => {
                       setFormData({ ...formData, email: e.target.value });
                       setLoginError(false);
                     }}
                   />
+                  <label
+                    htmlFor="loginEmail"
+                    className="absolute left-10 -top-2.5 px-1 text-xs text-base-content/60 bg-base-100 transition-all
+        peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-base-content/40 peer-placeholder-shown:bg-transparent
+        peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-base-content/60 peer-focus:bg-base-100"
+                  >
+                    Email
+                  </label>
                 </div>
               </div>
 
+              {/* Password */}
               <div className="form-control">
-                <label className="label">
-                  <span className="label-text font-medium">Password</span>
-                </label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <Lock className="size-5 text-base-content/40" />
                   </div>
                   <input
                     type={showPassword ? "text" : "password"}
-                    className={`input input-bordered w-full pl-10`}
-                    placeholder="••••••••"
+                    id="loginPassword"
+                    placeholder=" "
+                    className="peer input input-bordered w-full pl-10 pr-10 pt-5 pb-2"
                     value={formData.password}
-                    onChange={(e) =>
-                      setFormData({ ...formData, password: e.target.value })
-                    }
+                    onChange={(e) => {
+                      setFormData({ ...formData, password: e.target.value });
+                      setLoginError(false);
+                    }}
                   />
+                  <label
+                    htmlFor="loginPassword"
+                    className="absolute left-10 -top-2.5 px-1 text-xs text-base-content/60 bg-base-100 transition-all
+        peer-placeholder-shown:top-3.5 peer-placeholder-shown:text-sm peer-placeholder-shown:text-base-content/40 peer-placeholder-shown:bg-transparent
+        peer-focus:-top-2.5 peer-focus:text-xs peer-focus:text-base-content/60 peer-focus:bg-base-100"
+                  >
+                    Password
+                  </label>
                   <button
                     type="button"
                     className="absolute inset-y-0 right-0 pr-3 flex items-center"

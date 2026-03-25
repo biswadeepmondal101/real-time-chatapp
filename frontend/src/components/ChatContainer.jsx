@@ -97,9 +97,10 @@ export const ChatContainer = () => {
               <time className="text-xs opacity-50">
                 {formatMessageTime(message.createdAt)}
               </time>
-              {message.senderId._id === authUser._id && (
-                <div>{message.seen ? "seen" : "delivered"}</div>
-              )}
+              {!selectedUser.isGroup &&
+                message.senderId._id === authUser._id && (
+                  <div>{message.seen ? "seen" : "delivered"}</div>
+                )}
             </div>
 
             <div

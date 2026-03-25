@@ -104,6 +104,7 @@ export const ProfilePage = () => {
                   className="text-sm text-zinc-400 cursor-pointer hover:text-white transition-colors flex gap-1.5"
                 >
                   <LucideEdit2 className="w-4 h-4" />
+                  {user.bio === "" ? "Add a bio" : "Edit bio"}
                 </p>
               )}
             </div>

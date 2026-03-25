@@ -2,33 +2,26 @@ import React, { useState, useEffect } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import {
   Camera,
-  DeleteIcon,
-  Edit,
   Loader2,
   LucideEdit2,
-  Mail,
   User,
   UserRoundPlus,
   UserRoundX,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLocation } from "react-router-dom";
-import { useChatStore } from "../store/useChatStore.js";
-import { formatLastSeen } from "../utils/FormatMessageTime.js";
+
 import { useGroupStore } from "../store/useGroupStore.js";
 
 export const GroupInfoPage = () => {
-  const { authUser, updateProfile, isUpdatingProfile, checkAuth } =
-    useAuthStore();
-  const { getUsers, selectedUser, users } = useChatStore();
+  const { authUser, isUpdatingProfile } = useAuthStore();
+
   const location = useLocation();
   const isCurrentUser = location.state?.isCurrentUser;
 
   const [currentGroup, setCurrentGroup] = useState(
     isCurrentUser ? authUser : location.state?.user,
   );
-
-  console.log({ selectedUser });
 
   const {
     members,
@@ -44,7 +37,6 @@ export const GroupInfoPage = () => {
     getGroupMembers(currentGroup._id);
   }, []);
 
-  console.log("members", members);
   const isAdmin = currentGroup.admin === authUser._id;
   const [selectedImg, setSelectedImg] = useState(null);
   const [open, setOpen] = useState(false);
@@ -100,10 +92,7 @@ export const GroupInfoPage = () => {
           <div className="bg-base-300 rounded-xl p-6 space-y-8">
             <div className="text-center">
               <h1 className="text-2xl font-semibold ">Group Info</h1>
-              <p className="mt-2">Profile information</p>
             </div>
-
-            {/* avatar upload section */}
 
             <div className="flex flex-col items-center gap-4">
               <div className="relative">
@@ -188,36 +177,57 @@ export const GroupInfoPage = () => {
             </div>
 
             <h2 className="text-lg font-medium  mb-4">Group Members</h2>
-            {members.map((member) => (
-              <div
-                key={member._id}
-                className=" w-full p-3 flex items-center gap-3 hover:bg-base-300 transition-colors"
-              >
-                <div className="relative">
-                  <img
-                    src={member.profilePic || "./avatar.png"}
-                    alt={member.name}
-                    className="size-12 object-cover rounded-full"
-                  />
-                </div>
+            <span className="text-sm text-zinc-500">
+              ({members.length} members)
+            </span>
+            {isGroupsLoading ? (
+              <div className="flex flex-col items-center justify-center min-h-[200px] w-full gap-2">
+                <Loader2 className="size-8 animate-spin text-primary" />
+                <p className="text-sm text-base-content/60">
+                  Loading members...
+                </p>
+              </div>
+            ) : (
+              members.map((member) => (
+                <div
+                  key={member._id}
+                  className=" w-full p-2 flex items-center gap-3 hover:bg-base-300 transition-colors border rounded-lg"
+                >
+                  <div className="relative">
+                    <img
+                      src={member.profilePic || "./avatar.png"}
+                      alt={member.name}
+                      className="size-12 object-cover rounded-full"
+                    />
+                  </div>
 
-                <div className="hidden lg:block text-left min-w-0 w-full">
-                  {" "}
-                  <div className="flex items-center justify-between">
+                  <div className="hidden lg:block text-left min-w-0 w-full">
                     {" "}
-                    <div className="font-medium truncate pr-2">
-                      {member.fullName || member.name}
+                    <div className="flex items-center justify-between">
+                      {" "}
+                      <div className="font-medium truncate pr-2">
+                        {member.fullName || member.name}
+                      </div>
+                    </div>
+                    <div className="text-sm text-zinc-400 truncate">
+                      {member.email}
                     </div>
                   </div>
+                  {currentGroup.admin === member._id && (
+                    <div className=" text-green-500">Admin</div>
+                  )}
+                  {isAdmin && !(currentGroup.admin === member._id) && (
+                    <button
+                      title="Remove User"
+                      className="btn btn-sm gap-2 text-red-300 cursor-pointer hover:text-red-500 transition-colors"
+                      onClick={() => handleremoveMember(member._id)}
+                    >
+                      <UserRoundX />
+                    </button>
+                  )}
                 </div>
-                {currentGroup.admin === member._id && <div>Admin</div>}
-                {isAdmin && !(currentGroup.admin === member._id) && (
-                  <button onClick={() => handleremoveMember(member._id)}>
-                    <UserRoundX />
-                  </button>
-                )}
-              </div>
-            ))}
+              ))
+            )}
 
             <div className="mt-6 bg-base-300 rounded-xl p-6">
               <h2 className="text-lg font-medium  mb-4">Account Information</h2>

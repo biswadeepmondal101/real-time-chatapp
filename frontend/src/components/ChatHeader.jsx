@@ -28,7 +28,7 @@ const ChatHeader = () => {
   }, [selectedUser._id]);
 
   return (
-    <div className="p-2.5 border-b border-base-300">
+    <div className="p-2.5 border-b border-base-300/20 bg-base-100/0 sticky top-0 z-10 backdrop-blur-md">
       <Link
         to={selectedUser.isGroup ? "/groupinfo" : "/profile"}
         state={{ isCurrentUser: false, user: selectedUser }}
@@ -37,10 +37,11 @@ const ChatHeader = () => {
           <div className="px-4 flex items-center gap-3">
             {/* Avatar */}
             <div className="avatar">
-              <div className=" size-10 rounded-full relative">
+              <div className="size-10 rounded-full relative">
                 <img
                   src={selectedUser.profilePic || "/avatar.png"}
                   alt={selectedUser.fullName || selectedUser.name}
+                  className="object-cover rounded-full"
                 />
               </div>
             </div>
@@ -52,7 +53,7 @@ const ChatHeader = () => {
               </h3>
               <p className="text-sm text-base-content/70">
                 {selectedUser.isGroup
-                  ? "group"
+                  ? "Tap to view group info"
                   : isTyping
                     ? "Typing..."
                     : onlineUsers.includes(selectedUser._id)
